@@ -137,6 +137,33 @@ class PayboxRequest
         return $datas;
     }
 
+    public function checkAndGetDatasWithHmac($secret, $hash, $mode = 1)
+    {
+        $datas = $this->checkAndGetDatas();
+        $datetime = date('c');
+
+        $datas['PBX_MODE'] = $mode;
+        $datas['PBX_TIME'] = $datetime;
+        $datas['PBX_HASH'] = $hash;
+
+        $isFirst = true;
+        $concat = '';
+
+        foreach ($datas as $key => $data) {
+            if (!$isFirst) {
+                $concat .= '&';
+            }
+            $concat .= $key.'='.$data;
+            $isFirst = false;
+        }
+
+
+        $hmac = strtoupper(hash_hmac($hash, $concat, pack("H*", $secret)));
+        $datas['PBX_HASH'] = $hmac;
+
+        return $datas;
+    }
+
     /**
      * Hydrate object with an array of data.
      *

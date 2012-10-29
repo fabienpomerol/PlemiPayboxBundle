@@ -24,17 +24,48 @@ use Plemi\Bundle\PayboxBundle\PayboxSystem\PayboxRequest;
  */
 class CurlTransport extends AbstractTransport implements TransportInterface
 {
+
+    /**
+     * enable or not the hmac authentication
+     *
+     * @var boolean $isHmacEnabled
+     */
+    protected $isHmacEnabled;
+
+    /**
+     * This is the secret key given by paybox
+     *
+     * @var string $secret The secrect
+     */
+    protected $secret;
+
+    /**
+     * Name of selected hashing algorithm (i.e. "md5", "sha256", "haval160,4", etc..)
+     * See hash_algos() for a list of supported algorithms
+     *
+     * @var string $hash The hashing algorithm to use
+     */
+    protected $hash;
+
     /**
      * Constructor
      *
      * @param string $endpoint to paybox endpoint
      * @throws RuntimeException If cURL is not available
      */
-    public function __construct($endpoint = '')
+    public function __construct($endpoint = '', $hmac)
     {
         if (!function_exists('curl_init')) {
             throw new \RuntimeException('cURL is not available. Activate it first.');
         }
+
+        if ($hmac['enabled'] && empty($hmac['secret'])) {
+            throw new \RuntimeException('HMAC is enabled but you need to give a secret key.');
+        }
+
+        $this->isHmacEnabled = $hmac['enabled'];
+        $this->hash          = $hmac['hash'];
+        $this->secret        = $hmac['secret'];
 
         parent::__construct($endpoint);
     }
@@ -51,9 +82,12 @@ class CurlTransport extends AbstractTransport implements TransportInterface
     public function call(PayboxRequest $request)
     {
         $this->checkEndpoint();
-
-        $datas = $request->checkAndGetDatas();
-        $datas['PBX_MODE'] = 1;
+        if ($this->isHmacEnabled) {
+            $datas = $request->checkAndGetDatasWithHmac($this->secret, $this->hash);
+        }
+        else {
+            $datas = $request->checkAndGetDatas();
+        }
 
         $ch = curl_init();
 

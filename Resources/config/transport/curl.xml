@@ -8,6 +8,7 @@ xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/sc
     <services>
         <service id="plemi_paybox.transport" class="%plemi_paybox.transport.class%" public="false">
             <argument key="endpoint">%plemi_paybox.endpoint%</argument>
+            <argument key="hmac">%plemi_paybox.hmac%</argument>
         </service>
     </services>
 </container>
